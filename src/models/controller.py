@@ -5,9 +5,9 @@ import math
 import numpy as np
 from torch.autograd import Variable
 
-# NUM_OPS is the Number of image operations in the search space
-NUM_OPS = 15 #16
-NUM_MAGS = 10
+
+NUM_OPS = 15 # NUM_OPS is the Number of image operations in the search space. 16 in paper
+NUM_MAGS = 10 # Maginitde of the operations discrete 10 values
 
 class Controller(nn.Module):
     def __init__(self,n_subpolicies = 5, embedding_dim = 32,hidden_dim = 100):
@@ -31,6 +31,9 @@ class Controller(nn.Module):
         self.outmag.bias.data.fill_(0)
         
     def get_variable(self, inputs, cuda=False, **kwargs):
+        '''
+        Converts to torch tensor on appropriate device and wraps it in the Variable class
+        '''
         if type(inputs) in [list, np.ndarray]:
             inputs = torch.Tensor(inputs)
         if cuda:
@@ -66,6 +69,8 @@ class Controller(nn.Module):
         return entropy, selected_log_prob[:, 0], action[:,0]
     
     def forward(self,batch_size=1):
+        #batch size is number of policies not to be confused with batch size used to train the dataset
+        #batch size is passed as args.M which defines the number of policies.
         return self.sample(batch_size)
     
     def sample(self,batch_size=1):
@@ -80,10 +85,10 @@ class Controller(nn.Module):
             for j in range(2):
 #                if i > 0 or j > 0:
                 if j > 0:
-                    inp = self.embedding(inp) # B,embedding_dim
+                    inp = self.embedding(inp) # M,embedding_dim
                 hx, cx = self.lstm(inp, (hx, cx))
-                # B,NUM_OPS -> seems to be M, NUM_OPS (M=8 ? where is M is
-                # different instances of each input examplaugmented by
+                # M,NUM_OPS -> seems to be M, NUM_OPS (M=8 ? where is M is
+                # different instances of each input example augmented by
                 # adverserial example)
                 op = self.outop(hx)
                 
@@ -91,22 +96,25 @@ class Controller(nn.Module):
                 entropies.append(entropy)
                 log_probs.append(log_prob)
                 policies.append(action)
-                breakpoint()
                 
-                inp = self.get_variable(action, requires_grad = False)
-                inp = self.embedding(inp)
+                inp = self.get_variable(action, requires_grad = False) # [M] ->[M]  
+                inp = self.embedding(inp) # [M] ->[M, embedding_dim]
                 hx, cx = self.lstm(inp, (hx, cx))
-                mag = self.outmag(hx) # B,NUM_MAGS
+                mag = self.outmag(hx) # [M,NM_MAGS]
     
                 entropy, log_prob, action = self.calculate(mag)
                 entropies.append(entropy)
                 log_probs.append(log_prob)
                 policies.append(action)
                 
+                # Why NUM_OPS + action ??- doesnt this excede max(NUM_OPS) which is passed to the next iteration
                 inp = self.get_variable(NUM_OPS + action, requires_grad = False) 
         
-        entropies = torch.stack(entropies, dim = -1) ## B,Q*4
-        log_probs = torch.stack(log_probs, dim = -1) ## B,Q*4
-        policies = torch.stack(policies, dim = -1) ## B,Q*4
+        entropies = torch.stack(entropies, dim = -1) ## M,Q*4
+        log_probs = torch.stack(log_probs, dim = -1) ## M,Q*4
+        policies = torch.stack(policies, dim = -1) # [M,Q*4]. 20 discrete parameters to form a whole policy
+        breakpoint()
         
-        return policies, torch.sum(log_probs, dim = -1), torch.sum(entropies, dim = -1) # (B,Q*4) (B,) (B,) 
+        # All the entropy values returned are very similar as entropy means how much memory in bits to hold the information ??
+        # policies - [M, 20] -> random indices e.g. [13,  0, 13,  7,  4,  2, 13,  0, 11,  9,  2,  9,  3,  5,  1,  3,  2,  2, 10,  5]
+        return policies, torch.sum(log_probs, dim = -1), torch.sum(entropies, dim = -1) # (M,Q*4) (M,) (M,) 
