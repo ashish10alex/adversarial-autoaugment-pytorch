@@ -5,6 +5,7 @@ import math
 import numpy as np
 from torch.autograd import Variable
 
+# NUM_OPS is the Number of image operations in the search space
 NUM_OPS = 15 #16
 NUM_MAGS = 10
 
@@ -46,12 +47,22 @@ class Controller(nn.Module):
         return inp,hx,cx
     
     def calculate(self,logits):
-        probs = F.softmax(logits, dim=-1)
-        log_prob = F.log_softmax(logits, dim=-1)
+        #All logits seem to be the same i.e [logits[i] == logits[i+1 ... n]]
+        #Logits is the unnormalized final scores of the model. Softmax is applied to get probility 
+        # distribution over classes
+        probs = F.softmax(logits, dim=-1) #(M, NUM_OPS) 
+        # log softmax heavily penalize stuff that fails to predict the correct class
+        # Log softmax has also got improved numerical performance and gradient optimization
+        log_prob = F.log_softmax(logits, dim=-1) 
+        # Entropy measures the information or uncertainity of the variable.
+        # Entropy is measured in bits and there can be more than one bit of
+        # information in a varibale 
         entropy = -(log_prob * probs).sum(1, keepdim=False)
-        action = probs.multinomial(num_samples=1).data
+        #Action seems to be randomly selected 8 indices in [0, NUM_OPS)
+        action = probs.multinomial(num_samples=1).data #[M, 1]
+        #selected_log_prob is log probability value corrosponsing to the index value 
         selected_log_prob = log_prob.gather(1, self.get_variable(action,requires_grad = False))
-        
+        #Resize seleted_log_prob and action from torch.Size([M, 1]) to torch.size([M])
         return entropy, selected_log_prob[:, 0], action[:,0]
     
     def forward(self,batch_size=1):
@@ -63,6 +74,7 @@ class Controller(nn.Module):
         log_probs = []
            
 #        inp,hx,cx = self.create_static(batch_size)
+        #Q is number of policies
         for i in range(self.Q):
             inp,hx,cx = self.create_static(batch_size)
             for j in range(2):
@@ -70,12 +82,16 @@ class Controller(nn.Module):
                 if j > 0:
                     inp = self.embedding(inp) # B,embedding_dim
                 hx, cx = self.lstm(inp, (hx, cx))
-                op = self.outop(hx) # B,NUM_OPS
+                # B,NUM_OPS -> seems to be M, NUM_OPS (M=8 ? where is M is
+                # different instances of each input examplaugmented by
+                # adverserial example)
+                op = self.outop(hx)
                 
                 entropy, log_prob, action = self.calculate(op)
                 entropies.append(entropy)
                 log_probs.append(log_prob)
                 policies.append(action)
+                breakpoint()
                 
                 inp = self.get_variable(action, requires_grad = False)
                 inp = self.embedding(inp)
