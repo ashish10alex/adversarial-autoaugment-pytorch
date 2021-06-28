@@ -116,7 +116,7 @@ def reduced_metric(metric,num_gpus,ddp=True):
     if ddp:
         reduced_loss = reduce_tensor(metric.data, num_gpus)
         return reduced_loss.item()
-    return loss.item()
+    return metric.item()
 
 def load_yaml(dir):
     loader = yaml.SafeLoader

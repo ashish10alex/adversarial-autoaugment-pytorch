@@ -75,9 +75,10 @@ class MultiAugmentation(object):
         return imgs
 
 def parse_policies(policies):
-    # policies : (M,4(op,mag,op,mag)*5(sub_policy))
-    # parsed_policies : [[[(op, mag), (op,mag)]]*5] * M
+    # Input ->  policies : (M,4(op,mag,op,mag)*5(sub_policy))
+    # Returns ->  parsed_policies : [[[(op, mag), (op,mag)]]*5] * M
     
+   # al is list of all augmentation functions 
     al = augment_list()
     
     M, S = policies.shape
@@ -88,11 +89,13 @@ def parse_policies(policies):
         for j in range(S):
             parsed_policy.append([(al[(policies[i][4*j])][0].__name__,policies[i][4*j+1]/(NUM_MAGS-1)),(al[policies[i][4*j+2]][0].__name__,policies[i][4*j+3]/(NUM_MAGS-1))])
         parsed_policies.append(parsed_policy)
-    
     return parsed_policies
 
 def train_collate_fn(batch):
     """
+    len(batch) ->  batch_size(6)
+    batch[0][0].shape -> torch.Size([8, 3, 32, 32])
+    batch[0][1] -> label of the image 
     batch = [((M,3,H,W), label)]*batch_size
     """
     

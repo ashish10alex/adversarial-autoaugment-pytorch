@@ -4,7 +4,7 @@ import torch.nn.functional as F
 import math
 import numpy as np
 from torch.autograd import Variable
-
+import pandas as pd
 
 NUM_OPS = 15 # NUM_OPS is the Number of image operations in the search space. 16 in paper
 NUM_MAGS = 10 # Maginitde of the operations discrete 10 values
@@ -113,8 +113,6 @@ class Controller(nn.Module):
         entropies = torch.stack(entropies, dim = -1) ## M,Q*4
         log_probs = torch.stack(log_probs, dim = -1) ## M,Q*4
         policies = torch.stack(policies, dim = -1) # [M,Q*4]. 20 discrete parameters to form a whole policy
-        breakpoint()
-        
         # All the entropy values returned are very similar as entropy means how much memory in bits to hold the information ??
         # policies - [M, 20] -> random indices e.g. [13,  0, 13,  7,  4,  2, 13,  0, 11,  9,  2,  9,  3,  5,  1,  3,  2,  2, 10,  5]
         return policies, torch.sum(log_probs, dim = -1), torch.sum(entropies, dim = -1) # (M,Q*4) (M,) (M,) 

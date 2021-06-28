@@ -11,7 +11,8 @@ from .imagenet import ImageNet
 from .transform import get_basetransform, train_collate_fn, test_collate_fn
 
 def get_dataloader(conf, dataroot = './dataloader/datasets', split = 0.15, split_idx = 0, multinode = False):
-    batch_size = conf['batch_size'] // dist.get_world_size()
+    # batch_size = conf['batch_size'] // dist.get_world_size()
+    batch_size = conf['batch_size'] 
     transform_train, transform_test, transform_target = get_basetransform(conf['dataset'])
     
     if conf['dataset'] == 'cifar10':
@@ -64,14 +65,14 @@ def get_dataloader(conf, dataroot = './dataloader/datasets', split = 0.15, split
                 testset, num_replicas=dist.get_world_size(), rank=dist.get_rank())
 
     train_loader = torch.utils.data.DataLoader(
-        trainset, batch_size=batch_size, shuffle=True if train_sampler is None else False, num_workers=8, pin_memory=True,
+        trainset, batch_size=batch_size, shuffle=True if train_sampler is None else False, num_workers=conf["num_workers"], pin_memory=True,
         sampler=train_sampler, drop_last=True, collate_fn = train_collate_fn)
     valid_loader = torch.utils.data.DataLoader(
-        validset, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True,
+        validset, batch_size=batch_size, shuffle=False, num_workers=conf["num_workers"], pin_memory=True,
         sampler=valid_sampler, drop_last=False, collate_fn = test_collate_fn
     )
     test_loader = torch.utils.data.DataLoader(
-        testset, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True,
+        testset, batch_size=batch_size, shuffle=False, num_workers=conf["num_workers"], pin_memory=True,
         sampler=test_sampler, drop_last=False, collate_fn = test_collate_fn
     )
     
