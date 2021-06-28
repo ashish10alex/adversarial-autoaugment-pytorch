@@ -1,6 +1,7 @@
 import argparse
 import numpy as np
 import torch
+import pdbr
 
 import sys
 from tqdm import tqdm
@@ -11,11 +12,13 @@ from optimizer_scheduler import get_optimizer_scheduler
 from models import *
 from utils import *
 
+
 def parse_args():
     parser = argparse.ArgumentParser(description='Unofficial Implementation of Adversarial Autoaugment')
-    parser.add_argument('--load_conf', type = str)
-    parser.add_argument('--logdir', type = str)
-    parser.add_argument('--M', type = int)
+    parser.add_argument('--load_conf', type = str, default='confs/cifar10/shake26_2x96d_cifar10.yaml')
+    parser.add_argument('--logdir', type = str, default='./logs')
+    # M is instances of input example augmented by adverserial policies
+    parser.add_argument('--M', type = int, default=8)
     parser.add_argument('--seed', type = int, default = 0)
     parser.add_argument('--local_rank', type = int, default = -1)
     parser.add_argument('--amp', action='store_true')
@@ -29,6 +32,12 @@ def init_ddp(local_rank):
         
 if __name__ == '__main__':
     args = parse_args()
+    # args = {
+    #     'load_conf': 'confs/cifar10/shake26_2x96d_cifar10.yaml',
+    #     'logdir': './logs',
+    #     'seed': 0,
+    #     'local_rank': -1,
+    # }
     seed_everything(args.seed)
     
     conf = load_yaml(args.load_conf)
@@ -57,13 +66,15 @@ if __name__ == '__main__':
         if args.local_rank >=0:
             train_sampler.set_epoch(epoch)
         
-        Lm = torch.zeros(args.M).cuda()
+        Lm = torch.zeros(args.M).cuda() #used to store loss [M]
         Lm.requires_grad = False
         
-        model.train()
-        controller.train()
+        model.train() #image recognition model
+        controller.train() #policy network
+        #Batch size in controller is args.M (default 5) which defines the number of policies.
         policies, log_probs, entropies = controller(args.M) # (M,2*2*5) (M,) (M,) 
         policies = policies.cpu().detach().numpy()
+        # list of augmentations [M, ]
         parsed_policies = parse_policies(policies)
         
         trfs_list = train_loader.dataset.dataset.transform.transforms 
@@ -78,12 +89,15 @@ if __name__ == '__main__':
             optimizer.zero_grad()
             data = data.cuda()
             label = label.cuda()
+            #arg.amp = store_true
             with autocast(enabled=args.amp):
                 pred = model(data)
                 losses = [criterion(pred[i::args.M,...] ,label) for i in range(args.M)]
                 loss = torch.mean(torch.stack(losses))
             
             if args.amp:
+                #Enabled when using automatic mixed precision to prevent `underflow` of gradients.
+                # read - https://pytorch.org/docs/stable/amp.html
                 scaler.scale(loss).backward()
                 scaler.step(optimizer)
                 scaler.update()
@@ -92,7 +106,11 @@ if __name__ == '__main__':
                 optimizer.step()
 
             for i,_loss in enumerate(losses):
-                Lm[i] += reduced_metric(_loss.detach(), num_gpus, args.local_rank !=-1) / len(train_loader)
+                # Why divide by `len(train_loader)` which is = 8333
+                # Lm[i] += reduced_metric(_loss.detach(), num_gpus, args.local_rank !=-1) / len(train_loader)
+                Lm[i] += reduced_metric(_loss.detach(), num_gpus, args.local_rank !=-1) 
+            # print(Lm)
+            # if idx == 10: exit(-1)
             
             top1 = None
             top5 = None
