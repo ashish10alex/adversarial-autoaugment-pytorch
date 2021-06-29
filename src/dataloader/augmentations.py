@@ -216,4 +216,5 @@ def get_augment(name):
 
 def apply_augment(img, name, level):
     augment_fn, low, high = get_augment(name)
+    # print(f'Augmentation: {name}, magnitude: {level}')
     return augment_fn(img.copy(), level * (high - low) + low)

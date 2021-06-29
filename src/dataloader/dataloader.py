@@ -51,7 +51,8 @@ def get_dataloader(conf, dataroot = './dataloader/datasets', split = 0.15, split
         trainset = Subset(trainset,train_idx)
         validset = Subset(validset,valid_idx)
     else:
-        trainset = Subset(trainset, list(range(len(trainset.labels if conf['dataset'] == 'svhn' else trainset.targets))))
+        # trainset = Subset(trainset, list(range(len(trainset.labels if conf['dataset'] == 'svhn' else trainset.targets))))
+        trainset = Subset(trainset, list(range(len(trainset))))
         validset = Subset(validset,[])
     train_sampler = None
     valid_sampler = None

@@ -62,6 +62,7 @@ class Augmentation(object):
 
     def __call__(self, img):
         sub_policy = random.choice(self.policy)
+        # print(f'Sub policy applied - {sub_policy}')
         for op,mag in sub_policy:
             img = apply_augment(img, op, mag)
         return img
@@ -71,6 +72,7 @@ class MultiAugmentation(object):
         self.policies = [Augmentation(policy) for policy in policies]
 
     def __call__(self,img):
+        # print('function was called')
         imgs = [policy(img) for policy in self.policies] 
         return imgs
 

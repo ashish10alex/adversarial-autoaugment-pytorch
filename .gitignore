@@ -1,6 +1,7 @@
 *.pth
 *.pkl
 src/dataloader/datasets/
+examples/*
 src/output.log
 
 src/__pycache__/

@@ -74,6 +74,7 @@ class Controller(nn.Module):
         return self.sample(batch_size)
     
     def sample(self,batch_size=1):
+        print('forward method called - Controller class')
         policies = []
         entropies = []
         log_probs = []

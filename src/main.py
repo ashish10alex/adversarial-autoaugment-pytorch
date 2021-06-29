@@ -86,6 +86,7 @@ if __name__ == '__main__':
         
         progress_bar = tqdm(train_loader)
         for idx, (data,label) in enumerate(progress_bar):
+            # print(f"batch number: {idx}")
             optimizer.zero_grad()
             data = data.cuda()
             label = label.cuda()
@@ -107,10 +108,8 @@ if __name__ == '__main__':
 
             for i,_loss in enumerate(losses):
                 # Why divide by `len(train_loader)` which is = 8333
-                # Lm[i] += reduced_metric(_loss.detach(), num_gpus, args.local_rank !=-1) / len(train_loader)
-                Lm[i] += reduced_metric(_loss.detach(), num_gpus, args.local_rank !=-1) 
-            # print(Lm)
-            # if idx == 10: exit(-1)
+                Lm[i] += reduced_metric(_loss.detach(), num_gpus, args.local_rank !=-1) / len(train_loader) #default 
+                # Lm[i] += reduced_metric(_loss.detach(), num_gpus, args.local_rank !=-1)  / train_loader.batch_size * args.M #changed
             
             top1 = None
             top5 = None
@@ -130,6 +129,7 @@ if __name__ == '__main__':
         controller.train()
         controller_optimizer.zero_grad()
         
+        breakpoint()
         normalized_Lm = (Lm - torch.mean(Lm))/(torch.std(Lm) + 1e-5)
         score_loss = torch.mean(-log_probs * normalized_Lm) # - derivative of Score function
         entropy_penalty = torch.mean(entropies) # Entropy penalty
