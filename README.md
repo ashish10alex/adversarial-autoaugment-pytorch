@@ -1,6 +1,8 @@
 # Adversarial-Autoaugment-Pytorch
 Unofficial Pytorch Implementation Of [AdversarialAutoAugment(ICLR2020)](https://arxiv.org/pdf/1912.11188.pdf)
 
+[My Notes](https://github.com/ashish10alex/adversarial-autoaugment-pytorch/blob/main/src/Notes.md)
+
 ## Current Issue
 I want some help from those who know how to solve these issues. 
 
