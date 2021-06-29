@@ -7,13 +7,13 @@ policy network by Reinforcement learning.
 
 ## Notes to understand code
 
-Hyperparameter used in the experiment. Represented as (Hyperparameter name, Value in code)
-* B(3) - Batch size
-* C(3) - Number of channels
-* H(32) - Height of the image
-* W(32) - Width of the image
-* M(8) - Number of policies or number of instances of input examples augmented by adversarial examples. 
-* Q(5) - Number of sub policies in each of the M policies.
+* Hyperparameter used in the experiment. Represented as (Hyperparameter name, Value in code)
+    - B(3) - Batch size
+    - C(3) - Number of channels
+    - H(32) - Height of the image
+    - W(32) - Width of the image
+    - M(8) - Number of policies by which each input example in the batch is augmented by
+    - Q(5) - Number of sub policies in each of the M policies.
 
 * `augment_dict` in `src/dataloader/augmentations.py` contains a dictionary of all augmentations for the experiment. 
 * `parsed_policies[M, Q] ` in `src/dataloader/main.py` is a list of all policies.
