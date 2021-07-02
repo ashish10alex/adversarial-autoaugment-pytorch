@@ -29,15 +29,9 @@ def init_ddp(local_rank):
     if local_rank !=-1:
         torch.cuda.set_device(local_rank)
         torch.distributed.init_process_group(backend='nccl',init_method='env://')
-        
+
 if __name__ == '__main__':
     args = parse_args()
-    # args = {
-    #     'load_conf': 'confs/cifar10/shake26_2x96d_cifar10.yaml',
-    #     'logdir': './logs',
-    #     'seed': 0,
-    #     'local_rank': -1,
-    # }
     seed_everything(args.seed)
     
     conf = load_yaml(args.load_conf)

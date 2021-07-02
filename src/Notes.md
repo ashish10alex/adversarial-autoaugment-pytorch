@@ -5,6 +5,22 @@ is trained by a larger batch conjured from multiple augmented instances of the s
 learning. The losses of different augmented policies are applied to on the same data are used to train the augmentation
 policy network by Reinforcement learning.
 
+<b> Possible issues with implementation </b>
+1. Controller class `forward` method is called only once every epoch
+
+
+GANs here are not used to generate new data rather only as a min-max component to find the best augmentation policy.
+
+Issues with Autoaugment - 
+
+ * Learned policy is fixed for the entire training process. All possible instances of target example will be sent to the
+    target network repeatedly, which will result in an inevitable overfitting in a long epoch training. 
+
+Advantages of Adversarial Autoaugment  - 
+    * Only one target network is used to evaluate the performance of augmentation policies. 
+    * To combat harder examples from augmented by adversarial policies, target network has to learn more robust features. 
+
+
 ## Notes to understand code
 
 * Hyperparameter used in the experiment. Represented as (Hyperparameter name, Value in code)
@@ -83,7 +99,4 @@ The maximum extent of the augmentation is already predefined in `augment_dict` i
     ```
     [RandomCrop(size=(32, 32), padding=4), RandomHorizontalFlip(p=0.5), Lambda(), Lambda()]
     ```
-<b> Check if correct </b>
-1. Controller class `forward` method is called only once every epoch
-
 

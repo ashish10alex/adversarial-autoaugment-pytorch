@@ -4,7 +4,6 @@ import torch.nn.functional as F
 import math
 import numpy as np
 from torch.autograd import Variable
-import pandas as pd
 
 NUM_OPS = 15 # NUM_OPS is the Number of image operations in the search space. 16 in paper
 NUM_MAGS = 10 # Maginitde of the operations discrete 10 values
