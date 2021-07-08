@@ -16,7 +16,6 @@ masknet:
   mask_act: 'sigmoid'
   bidirectional: true
   dropout: 0
-  _mode: 'both'
 # Training config
 training:
   epochs: 300

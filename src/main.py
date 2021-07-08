@@ -123,7 +123,6 @@ if __name__ == '__main__':
         controller.train()
         controller_optimizer.zero_grad()
         
-        breakpoint()
         normalized_Lm = (Lm - torch.mean(Lm))/(torch.std(Lm) + 1e-5)
         score_loss = torch.mean(-log_probs * normalized_Lm) # - derivative of Score function
         entropy_penalty = torch.mean(entropies) # Entropy penalty

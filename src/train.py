@@ -8,10 +8,11 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torchvision
-import torchvision.transforms as transforms
+from torch.optim import Adam, SGD
 from torch.utils.data import DataLoader
+from torch.optim import Adam
 
+from asteroid.engine.optimizers import make_optimizer
 from pytorch_lightning.core import LightningModule
 from pytorch_lightning.trainer import Trainer
 
@@ -67,6 +68,9 @@ def main(config):
     target_model = DPRNNTasNet(**config["filterbank"], **config["masknet"])
     controller_model = Controller()
 
+    target_model_optimizer =  make_optimizer(target_model.parameters(), **config["optim"])
+    controller_model_optimizer = Adam(controller_model.parameters(), lr = 0.00035)
+
     loss_function = PITLossWrapper(pairwise_neg_sisdr, pit_from="pw_mtx")
 
     loss_func = PITLossWrapper(pairwise_neg_sisdr, pit_from="pw_mtx")
@@ -75,6 +79,8 @@ def main(config):
                                            train_loader=train_loader,
                                            val_loader=val_loader,
                                            loss_function=loss_function,
+                                           target_model_optimizer=target_model_optimizer,
+                                           controller_model_optimizer=controller_model_optimizer,
                                            config=config,
                                            )
 

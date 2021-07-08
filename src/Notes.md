@@ -9,6 +9,10 @@ policy network by Reinforcement learning.
 1. Controller class `forward` method is called only once every epoch
 
 
+<b> Possible issues with **new** pytorch-lightning implementation </b>
+1.To accommodate for variable modified in computation graph error, following hack has been applied - `self.target_model_loss_copy = self.target_model_loss.clone().detach() # is this hack correct`
+
+
 GANs here are not used to generate new data rather only as a min-max component to find the best augmentation policy.
 
 Issues with Autoaugment - 

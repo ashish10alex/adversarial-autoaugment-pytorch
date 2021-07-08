@@ -1,6 +1,7 @@
 *.pth
 *.pkl
 src/dataloader/datasets/
+src/lightning_logs/
 examples/*
 src/output.log
 
