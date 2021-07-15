@@ -127,7 +127,6 @@ if __name__ == '__main__':
         score_loss = torch.mean(-log_probs * normalized_Lm) # - derivative of Score function
         entropy_penalty = torch.mean(entropies) # Entropy penalty
         controller_loss = score_loss - conf['entropy_penalty'] * entropy_penalty
-        
         controller_loss.backward()
         controller_optimizer.step()
         scheduler.step()

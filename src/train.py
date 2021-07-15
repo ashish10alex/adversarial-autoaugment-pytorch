@@ -1,4 +1,5 @@
 import pdbr
+import json
 import os
 from argparse import ArgumentParser, Namespace
 from collections import OrderedDict
@@ -15,21 +16,25 @@ from torch.optim import Adam
 from asteroid.engine.optimizers import make_optimizer
 from pytorch_lightning.core import LightningModule
 from pytorch_lightning.trainer import Trainer
+from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
+from pytorch_lightning import Trainer, seed_everything, loggers as pl_loggers
 
 from asteroid import DPRNNTasNet 
 from asteroid.data import LibriMix
-from asteroid.engine.system import System
+from dataset import LibriMix
+# from asteroid.engine.system import System
 
 from models.controller import Controller
 import pytorch_lightning as pl
 from system import AdvAutoAugment
 from asteroid.losses import PITLossWrapper, pairwise_neg_sisdr
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--exp_dir", default="exp/tmp", help="Full path to save best validation model")
-pl.seed_everything(42)
+# parser = argparse.ArgumentParser()
+# parser.add_argument("--exp_dir", default="exp/tmp", help="Full path to save best validation model")
+# pl.seed_everything(42)
 
 def main(config):
+    exp_dir = config["training"]["exp_dir"]
     train_set = LibriMix(
         csv_dir=config["data"]["train_dir"],
         task=config["data"]["task"],
@@ -37,7 +42,6 @@ def main(config):
         n_src=config["data"]["nondefault_nsrc"],
         segment=config["data"]["segment"]
     )
-
 
     val_set = LibriMix(
         csv_dir=config["data"]["valid_dir"],
@@ -71,10 +75,17 @@ def main(config):
     target_model_optimizer =  make_optimizer(target_model.parameters(), **config["optim"])
     controller_model_optimizer = Adam(controller_model.parameters(), lr = 0.00035)
 
+     # Define callbacks
+    callbacks = []
+    checkpoint_dir = os.path.join(exp_dir, "checkpoints/")
+    checkpoint = ModelCheckpoint( monitor="val_loss", filename='{epoch:02d}-{val_loss:.2f}', mode="min", save_top_k=5)
+    callbacks.append(checkpoint)
+    if config["training"]["early_stop"]:
+	    callbacks.append(EarlyStopping(monitor="val_loss", mode="min", patience=30, verbose=True))
     loss_function = PITLossWrapper(pairwise_neg_sisdr, pit_from="pw_mtx")
 
     loss_func = PITLossWrapper(pairwise_neg_sisdr, pit_from="pw_mtx")
-    adv_autoaugment_model = AdvAutoAugment(target_model=target_model, 
+    system = AdvAutoAugment(target_model=target_model, 
                                            controller_model=controller_model,
                                            train_loader=train_loader,
                                            val_loader=val_loader,
@@ -89,19 +100,32 @@ def main(config):
         gpus=gpus,
         distributed_backend="ddp",
         gradient_clip_val=config["training"]["gradient_clipping"],
+        callbacks=callbacks,
     )
-    trainer.fit(adv_autoaugment_model)
+    trainer.fit(system)
 
+    best_k = {k: v.item() for k, v in checkpoint.best_k_models.items()}
+    with open(os.path.join(exp_dir, "best_k_models.json"), "w") as f:
+        json.dump(best_k, f, indent=0)
+
+    state_dict = torch.load(checkpoint.best_model_path)
+    system.load_state_dict(state_dict=state_dict["state_dict"])
+    system.cpu()
+
+    to_save = system.target_model.serialize()
+    to_save.update(train_set.get_infos())
+    torch.save(to_save, os.path.join(exp_dir, "best_model.pth"))
 
 
 if __name__ == "__main__":
     import yaml
-    from pprint import pprint as print
+    from pprint import pprint
     from asteroid.utils import prepare_parser_from_dict, parse_args_as_dict
 
     # We start with opening the config file conf.yml as a dictionary from
     # which we can create parsers. Each top level key in the dictionary defined
     # by the YAML file creates a group in the parser.
+    parser=None
     with open("local/conf.yml") as f:
         def_conf = yaml.safe_load(f)
     parser = prepare_parser_from_dict(def_conf, parser=parser)
@@ -112,5 +136,6 @@ if __name__ == "__main__":
     # the attributes in an non-hierarchical structure. It can be useful to also
     # have it so we included it here but it is not used.
     arg_dic, plain_args = parse_args_as_dict(parser, return_plain_args=True)
-    print(arg_dic)
+    pprint(arg_dic)
     main(arg_dic)
+

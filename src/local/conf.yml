@@ -18,7 +18,8 @@ masknet:
   dropout: 0
 # Training config
 training:
-  epochs: 300
+  exp_dir: exp/train_dprnntasnet_autoaug
+  epochs: 5
   batch_size: 8
   num_workers: 8
   half_lr: yes
@@ -33,8 +34,12 @@ optim:
 data:
   train_dir: /jmain01/home/JAD007/txk02/aaa18-txk02/Datasets/asteroid/egs/librimix/ConvTasNet/data/wav8k/min/train-100/
   valid_dir: /jmain01/home/JAD007/txk02/aaa18-txk02/Datasets/asteroid/egs/librimix/ConvTasNet/data/wav8k/min/dev
+  test_dir: /jmain01/home/JAD007/txk02/aaa18-txk02/Datasets/asteroid/egs/librimix/ConvTasNet/data/wav8k/min/test
   task: sep_noisy
   nondefault_nsrc: 2
   sample_rate: 8000
   mode: min
   segment: 2.0
+controller:
+  M: 8
+  entropy_penalty: !!float 1e-5

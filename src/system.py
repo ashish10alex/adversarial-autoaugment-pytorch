@@ -30,7 +30,6 @@ class AdvAutoAugment(LightningModule):
         self.controller_model_optimizer = controller_model_optimizer
         self.config = config
 
-
     def forward(self, mixed_audio_batch):
         return self.target_model(mixed_audio_batch)
 
@@ -43,13 +42,11 @@ class AdvAutoAugment(LightningModule):
             estimated_sources = self(mixture)
             self.target_model_loss = self.loss_function(estimated_sources, sources)
             self.target_model_loss_copy = self.target_model_loss.clone().detach() # is this hack correct
-            tqdm_dict = {'target_model_loss': self.target_model_loss}
+            # print(f'self.target_model_loss_copy: {self.target_model_loss_copy}')
             target_model_output = OrderedDict({
                                 'loss': self.target_model_loss,
-                                'progress_bar': tqdm_dict,
-                                'log': tqdm_dict
-                            
             })
+            self.log('target_loss', self.target_model_loss_copy, prog_bar=True)
             return target_model_output
 
         if optimizer_idx == 1:
@@ -61,13 +58,11 @@ class AdvAutoAugment(LightningModule):
             score_loss = torch.mean(-log_probs * normalized_target_model_loss) # - derivative of Score function
             entropy_penalty = torch.mean(entropies) # Entropy penalty
             controller_loss = score_loss - self.config['controller']['entropy_penalty'] * entropy_penalty
-            tqdm_dict = {'controller_model_loss': controller_loss}
+            # print(f'controller_loss: {controller_loss}')
             controller_model_output = OrderedDict({
                                 'loss': controller_loss,
-                                'progress_bar': tqdm_dict,
-                                'log': tqdm_dict
-                            
             })
+            self.log('controller_loss', controller_loss, prog_bar=True)
             return controller_model_output
 
     # def backward(self, loss, optimizer, optimizer_idx):
@@ -77,6 +72,12 @@ class AdvAutoAugment(LightningModule):
     #     if optimizer_idx == 1:
     #         # print(f'optmizer idx: {optimizer_idx}, loss: {loss}')
     #         loss.backward()
+
+    def validation_step(self, batch, batch_nb):
+        mixture, sources = batch
+        estimated_sources = self(mixture)
+        self.target_model_loss = self.loss_function(estimated_sources, sources)
+        self.log("val_loss", self.target_model_loss, on_epoch=True, prog_bar=True)
 
     def configure_optimizers(self):
         '''
