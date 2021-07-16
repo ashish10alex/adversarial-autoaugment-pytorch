@@ -1,4 +1,4 @@
-
+import einops
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -9,6 +9,7 @@ from asteroid import DPRNNTasNet
 from pytorch_lightning.core import LightningModule
 from torch.optim import Adam, SGD
 from collections import OrderedDict
+from augment_with_policies import augmentation_function
 
 NUM_OPS = 15 # NUM_OPS is the Number of image operations in the search space. 16 in paper
 NUM_MAGS = 10 # Maginitde of the operations discrete 10 values
@@ -37,6 +38,9 @@ class AdvAutoAugment(LightningModule):
         #Train target model
         if optimizer_idx == 0:
             mixture, sources = batch
+            mixture = augmentation_function(mixture.detach().cpu().numpy()[0])
+            mixture = torch.Tensor(mixture).cuda()
+            sources = einops.repeat(sources, 'b h w -> (repeat b) h w', repeat=mixture.shape[0])
             #TODO - 
             #1. Create multiple instances of batch 
             estimated_sources = self(mixture)

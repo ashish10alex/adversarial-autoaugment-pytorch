@@ -1,5 +1,6 @@
-
+import pdbr
 from augmentation_policies import augmentation_policies
+import numpy as np
 
 '''
 Various augmentation polices
@@ -14,32 +15,16 @@ Out[5]:
  <audiomentations.core.composition.Compose at 0x7ff267addf90>]
 '''
 
-
-def get_augment(name):
-    return augment_dict[name]
-
-def apply_augment(audio, sub_policy):
-    augment_fn = get_augment(sub_policy)
-    return augment_fn(audio.copy())
-
-class Augmentation(object):
-    def __init__(self, policy):
-        """
-        Doc string here
-        """
-        self.policy = policy
-
-    def __call__(self, audio):
-        sub_policy = random.choice(self.policy)
-        audio = apply_augment(audio, sub_policy)
-        return audio
-
-class MultiAugmentationAudio(object):
+class AugmentWithPolicies(object):
     def __init__(self, policies):
-        self.policies = [Augmentation(policy) for policy in policies]
-        print(self.policies)
+        self.policies = policies
 
     def __call__(self,audio):
-        # print('function was called')
-        audios = [policy(audio) for policy in self.policies] 
+        audios = [policy(audio.copy(), sample_rate=8000) for policy in self.policies] 
         return audios
+
+augmentation_function = AugmentWithPolicies(augmentation_policies)
+# audio = np.random.randn(8000)
+# aug_audio = np.array(augs(audio))
+# print(aug_audio)
+
