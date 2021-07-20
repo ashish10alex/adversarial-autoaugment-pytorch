@@ -1,19 +1,27 @@
 import pdbr
-from augmentation_policies import augmentation_policies
+# from augmentation_policies import augmentation_policies
 import numpy as np
+from typing import Callable
 
-'''
-Various augmentation polices
-In [5]: augmentation_policies.transforms
-Out[5]:
-[<audiomentations.augmentations.transforms.AddGaussianNoise at 0x7ff283587f50>,
- <audiomentations.augmentations.transforms.AddShortNoises at 0x7ff283587890>,
- <audiomentations.augmentations.transforms.TimeMask at 0x7ff283587dd0>,
- <audiomentations.augmentations.transforms.FrequencyMask at 0x7ff2835f36d0>,
- <audiomentations.augmentations.transforms.TimeStretch at 0x7ff2835f3710>,
- <audiomentations.augmentations.transforms.PitchShift at 0x7ff267added0>,
- <audiomentations.core.composition.Compose at 0x7ff267addf90>]
-'''
+from audiomentations import (AddGaussianNoise, AddImpulseResponse,
+                             AddShortNoises, Compose, FrequencyMask,
+                             PitchShift, TimeMask, TimeStretch)
+
+augmentation_list = [AddGaussianNoise, AddShortNoises, FrequencyMask, TimeMask ]
+
+class ComposeAugmentationPolices:
+    def __init__(self, probabilities, augmentation_list=augmentation_list):
+        self.probabilities = probabilities
+        self.augmentation_list = augmentation_list
+        self.short_noises_path = "/jmain01/home/JAD007/txk02/aaa18-txk02/Conv-TasNet/src/mini_data/train_noise"
+
+    def __call__(self) -> Callable:
+        composed_augmentations = []
+        for i in range(len(self.probabilities)):
+            if self.augmentation_list[i].__name__ == 'AddShortNoises':
+                composed_augmentations.append(Compose([self.augmentation_list[i](self.short_noises_path, p=self.probabilities[i])]))
+            else: composed_augmentations.append(Compose([self.augmentation_list[i](p=self.probabilities[i])]))
+        return composed_augmentations
 
 class AugmentWithPolicies(object):
     def __init__(self, policies):
@@ -23,8 +31,9 @@ class AugmentWithPolicies(object):
         audios = [policy(audio.copy(), sample_rate=8000) for policy in self.policies] 
         return audios
 
-augmentation_function = AugmentWithPolicies(augmentation_policies)
+# augmentation_policies = ComposeAugmentationPolices([0.3, 0.6, 0.1], augmentation_list=augmentation_list)
+# augmentation_function = AugmentWithPolicies(augmentation_policies())
 # audio = np.random.randn(8000)
-# aug_audio = np.array(augs(audio))
+# aug_audio = np.array(augmentation_function(audio))
 # print(aug_audio)
 

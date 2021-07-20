@@ -12,6 +12,6 @@ expdir=exp/train_dprnntasnet_${tag}
 mkdir -p $expdir && echo $uuid >> $expdir/run_uuid.txt
 echo "Results from the following experiment will be stored in $expdir"
 
-python train.py 
+python -W ignore train.py 
 
 

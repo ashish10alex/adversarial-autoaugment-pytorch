@@ -13,10 +13,10 @@ augmentation_policies = Compose(
             max_snr_in_db=24,
             p=1,
         ),
-        TimeMask(min_band_part=0.0, max_band_part=0.50, p=1),
-        FrequencyMask(min_frequency_band=0.1, max_frequency_band=0.10, p=1),
-        TimeStretch(0.9, 1.0, leave_length_unchanged=True, p=1),
-        PitchShift(min_semitones=1, max_semitones=2, p=1),
+        # TimeMask(min_band_part=0.0, max_band_part=0.50, p=1),
+        # FrequencyMask(min_frequency_band=0.1, max_frequency_band=0.10, p=1),
+        # TimeStretch(0.9, 1.0, leave_length_unchanged=True, p=1),
+        # PitchShift(min_semitones=1, max_semitones=2, p=1),
     ]
 )
 augmentation_policies_tf = Compose(

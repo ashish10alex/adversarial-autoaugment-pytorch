@@ -4,6 +4,7 @@ src/dataloader/datasets/
 src/lightning_logs/
 examples/*
 src/output.log
+src/exp/*
 
 src/__pycache__/
 .ipynb_checkpoints

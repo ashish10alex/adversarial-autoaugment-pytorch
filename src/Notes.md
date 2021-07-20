@@ -15,6 +15,7 @@ policy network by Reinforcement learning.
 <b> Tests to do </b>
 * Check DPRNN val loss after one epoch and compare with vanilla implementation
     loss=-1
+* Same probabilities from `AugmentationProbabilityOptimizer` model
 
 
 GANs here are not used to generate new data rather only as a min-max component to find the best augmentation policy.

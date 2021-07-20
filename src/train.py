@@ -24,10 +24,12 @@ from asteroid.data import LibriMix
 from dataset import LibriMix
 # from asteroid.engine.system import System
 
-from models.controller import Controller
+# from models.controller import Controller
+from augmentation_probability_optimizer import AugmentationProbabilityOptimizer
 import pytorch_lightning as pl
 from system import AdvAutoAugment
 from asteroid.losses import PITLossWrapper, pairwise_neg_sisdr
+from augment_with_policies import augmentation_list
 
 # parser = argparse.ArgumentParser()
 # parser.add_argument("--exp_dir", default="exp/tmp", help="Full path to save best validation model")
@@ -70,10 +72,10 @@ def main(config):
     gpus = -1 if torch.cuda.is_available() else None
 
     target_model = DPRNNTasNet(**config["filterbank"], **config["masknet"])
-    controller_model = Controller()
+    probability_model = AugmentationProbabilityOptimizer(num_augmentations=len(augmentation_list), embedding_dim=20)
 
     target_model_optimizer =  make_optimizer(target_model.parameters(), **config["optim"])
-    controller_model_optimizer = Adam(controller_model.parameters(), lr = 0.00035)
+    probability_model_optimizer = Adam(probability_model.parameters(), lr = 0.00035)
 
      # Define callbacks
     callbacks = []
@@ -86,12 +88,12 @@ def main(config):
 
     loss_func = PITLossWrapper(pairwise_neg_sisdr, pit_from="pw_mtx")
     system = AdvAutoAugment(target_model=target_model, 
-                                           controller_model=controller_model,
+                                           probability_model=probability_model,
                                            train_loader=train_loader,
                                            val_loader=val_loader,
                                            loss_function=loss_function,
                                            target_model_optimizer=target_model_optimizer,
-                                           controller_model_optimizer=controller_model_optimizer,
+                                           probability_model_optimizer=probability_model_optimizer,
                                            config=config,
                                            )
 

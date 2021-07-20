@@ -10,7 +10,6 @@ import os
 import shutil
 import zipfile
 import random
-from augment_with_policies import augmentation_function
 
 # from .wham_dataset import wham_noise_license
 
@@ -77,8 +76,8 @@ class LibriMix(Dataset):
         self.n_src = n_src
 
     def __len__(self):
-        return 16
-        # return len(self.df)
+        # return 1000
+        return len(self.df)
 
     def __getitem__(self, idx):
         # Get the row in dataframe
@@ -107,7 +106,6 @@ class LibriMix(Dataset):
                 sources_list.append(s)
         # Read the mixture
         mixture, _ = sf.read(self.mixture_path, dtype="float32", start=start, stop=stop)
-        # mixture = np.array(augmentation_function(mixture))
         # Convert to torch tensor
         mixture = torch.from_numpy(mixture)
         # Stack sources

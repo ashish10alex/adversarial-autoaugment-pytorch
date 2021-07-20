@@ -1,3 +1,4 @@
+import pdbr
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -5,7 +6,8 @@ import math
 import numpy as np
 from torch.autograd import Variable
 
-NUM_OPS = 15 # NUM_OPS is the Number of image operations in the search space. 16 in paper
+# NUM_OPS = 15 # NUM_OPS is the Number of image operations in the search space. 16 in paper
+NUM_OPS = 3 #NUM_OPS is the Number of image operations in the search space. 16 in paper
 NUM_MAGS = 10 # Maginitde of the operations discrete 10 values
 
 class Controller(nn.Module):
@@ -41,10 +43,10 @@ class Controller(nn.Module):
             out = Variable(inputs, **kwargs)
         return out
     
-    def create_static(self,batch_size):
-        inp = self.get_variable(torch.zeros(batch_size, self.embedding_dim), cuda = True, requires_grad = False)
-        hx = self.get_variable(torch.zeros(batch_size, self.hidden_dim), cuda = True, requires_grad = False)
-        cx = self.get_variable(torch.zeros(batch_size, self.hidden_dim), cuda = True, requires_grad = False)
+    def create_static(self,batch_size, cuda=False):
+        inp = self.get_variable(torch.zeros(batch_size, self.embedding_dim), cuda = cuda, requires_grad = False)
+        hx = self.get_variable(torch.zeros(batch_size, self.hidden_dim), cuda = cuda, requires_grad = False)
+        cx = self.get_variable(torch.zeros(batch_size, self.hidden_dim), cuda = cuda, requires_grad = False)
         
         return inp,hx,cx
     
@@ -80,7 +82,7 @@ class Controller(nn.Module):
 #        inp,hx,cx = self.create_static(batch_size)
         #Q is number of policies
         for i in range(self.Q):
-            inp,hx,cx = self.create_static(batch_size)
+            inp,hx,cx = self.create_static(batch_size, cuda=False)
             for j in range(2):
 #                if i > 0 or j > 0:
                 if j > 0:
