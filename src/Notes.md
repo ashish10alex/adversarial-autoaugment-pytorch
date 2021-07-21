@@ -5,6 +5,10 @@ is trained by a larger batch conjured from multiple augmented instances of the s
 learning. The losses of different augmented policies are applied to on the same data are used to train the augmentation
 policy network by Reinforcement learning.
 
+TODO - 
+ * GAN in PL -  https://github.com/PyTorchLightning/lightning-bolts/blob/master/pl_bolts/models/gans/basic/basic_gan_module.py
+ * requires_grad is False when optimizer index is not correct
+
 <b> Possible issues with implementation </b>
 1. Controller class `forward` method is called only once every epoch
 

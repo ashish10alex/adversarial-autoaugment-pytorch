@@ -75,7 +75,7 @@ def main(config):
     probability_model = AugmentationProbabilityOptimizer(num_augmentations=len(augmentation_list), embedding_dim=20)
 
     target_model_optimizer =  make_optimizer(target_model.parameters(), **config["optim"])
-    probability_model_optimizer = Adam(probability_model.parameters(), lr = 0.00035)
+    probability_model_optimizer = Adam(probability_model.parameters(), lr = 0.001)
 
      # Define callbacks
     callbacks = []
@@ -88,20 +88,20 @@ def main(config):
 
     loss_func = PITLossWrapper(pairwise_neg_sisdr, pit_from="pw_mtx")
     system = AdvAutoAugment(target_model=target_model, 
-                                           probability_model=probability_model,
-                                           train_loader=train_loader,
-                                           val_loader=val_loader,
-                                           loss_function=loss_function,
-                                           target_model_optimizer=target_model_optimizer,
-                                           probability_model_optimizer=probability_model_optimizer,
-                                           config=config,
-                                           )
+                           probability_model=probability_model,
+                           train_loader=train_loader,
+                           val_loader=val_loader,
+                           loss_function=loss_function,
+                           target_model_optimizer=target_model_optimizer,
+                           probability_model_optimizer=probability_model_optimizer,
+                           config=config,
+                           )
 
     trainer = pl.Trainer(
         max_epochs=config["training"]["epochs"],
         gpus=gpus,
         distributed_backend="ddp",
-        gradient_clip_val=config["training"]["gradient_clipping"],
+        # gradient_clip_val=config["training"]["gradient_clipping"],
         callbacks=callbacks,
     )
     trainer.fit(system)
