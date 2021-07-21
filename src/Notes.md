@@ -7,7 +7,8 @@ policy network by Reinforcement learning.
 
 TODO - 
  * GAN in PL -  https://github.com/PyTorchLightning/lightning-bolts/blob/master/pl_bolts/models/gans/basic/basic_gan_module.py
- * requires_grad is False when optimizer index is not correct
+ * Check if weights of `probability_model_optimizer` are changing during training - Nope :/ -> Fix this !!
+ * Fix no gradient clipping with `manual_backward` issue - https://github.com/PyTorchLightning/pytorch-lightning/issues/7698
 
 <b> Possible issues with implementation </b>
 1. Controller class `forward` method is called only once every epoch
