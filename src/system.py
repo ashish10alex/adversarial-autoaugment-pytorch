@@ -1,3 +1,4 @@
+import time
 import einops
 import torch
 import torch.nn as nn
@@ -45,26 +46,39 @@ class AdvAutoAugment(LightningModule):
         return mixture, sources
 
     def training_step(self, batch, batch_idx):
+        #DO NOT AUGMENT IN EVERY ITERATION
         optimizer_1, optimizer_2 = self.optimizers()
-        # breakpoint()
         mixture, sources = batch
         probabilities = self.probability_model() 
-        print(f'probabilities: {probabilities}')
+        # print(f'self.probability_model.linear.weight: {self.probability_model.linear.weight}')
+        # print(f'probabilities: {probabilities}')
+        # print(f'grads prob_model: {list(self.probability_model.parameters())[0].grad is not None}') #should be true if working
+        # print(f'grads target_model: {list(self.target_model.parameters())[0].grad is not None}') #should be true if working
         mixture, sources = self.get_augmented_data_with_policies(mixture, sources, probabilities)
         estimated_sources = self(mixture)
         target_model_loss = self.loss_function(estimated_sources, sources)
         optimizer_1.zero_grad()
-        self.manual_backward(target_model_loss, optimizer_1, retain_graph=True)
+        # self.manual_backward(target_model_loss, optimizer_1, retain_graph=True)
+        # target_model_loss.backward(retain_graph=True)
+        target_model_loss.backward()
         optimizer_1.step()
 
         optimizer_2.zero_grad()
-        self.manual_backward(target_model_loss, optimizer_2, inputs=list(self.probability_model.parameters()))
+        loss_prob_fake = self.get_probability_model_loss(probabilities, target_model_loss.detach())
+        loss_prob_fake.backward(inputs=list(self.probability_model.parameters()))
+        # self.manual_backward(target_model_loss, optimizer_2, inputs=list(self.probability_model.parameters()))
         optimizer_2.step()
         target_model_output = OrderedDict({
                             'loss': target_model_loss,
         })
         self.log('target_loss', target_model_loss, prog_bar=True)
+        # time.sleep(2)
         return target_model_output
+
+    def get_probability_model_loss(self, probabilities, target_model_loss):
+        prob_sum = probabilities.sum()
+        return prob_sum * target_model_loss
+
 
     def validation_step(self, batch, batch_nb):
         mixture, sources = batch
