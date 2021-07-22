@@ -31,7 +31,7 @@ class AdvAutoAugment(LightningModule):
         self.target_model_optimizer = target_model_optimizer
         self.probability_model_optimizer = probability_model_optimizer
         self.config = config
-        self.automatic_optimization = False
+        self.automatic_optimization = False # to do manual training step
 
     def forward(self, mixed_audio_batch):
         return self.target_model(mixed_audio_batch)
@@ -45,20 +45,33 @@ class AdvAutoAugment(LightningModule):
         sources = einops.repeat(sources, 'b h w -> (repeat b) h w', repeat=mixture.shape[0])
         return mixture, sources
 
+    def test_how_many_audios_augemented(self, mixture):
+        is_equal = []
+        half = mixture.size()[0] // 2
+        for i in range(half):
+            is_equal.append(torch.equal(mixture[0], mixture[i]))
+        return is_equal
+
     def training_step(self, batch, batch_idx):
         #DO NOT AUGMENT IN EVERY ITERATION
         optimizer_1, optimizer_2 = self.optimizers()
         mixture, sources = batch
         probabilities = self.probability_model() 
+        probabilities_copy = probabilities.clone().detach() #make a copy so that they point to different address in memory
+        # probabilities_copy = torch.Tensor([0.0, 0.2, 0.2, 0.2]).cuda()
+        #Print statements to check if the gradients are updating
         # print(f'self.probability_model.linear.weight: {self.probability_model.linear.weight}')
         # print(f'probabilities: {probabilities}')
         # print(f'grads prob_model: {list(self.probability_model.parameters())[0].grad is not None}') #should be true if working
         # print(f'grads target_model: {list(self.target_model.parameters())[0].grad is not None}') #should be true if working
-        mixture1, sources1 = self.get_augmented_data_with_policies(mixture[0], sources[0][None], probabilities)
-        mixture2, sources2 = self.get_augmented_data_with_policies(mixture[1], sources[1][None], probabilities)
+        mixture1, sources1 = self.get_augmented_data_with_policies(mixture[0], sources[0][None], probabilities_copy)
+        mixture2, sources2 = self.get_augmented_data_with_policies(mixture[1], sources[1][None], probabilities_copy)
         mixture = torch.cat([mixture1, mixture2], dim=0)
         sources = torch.cat([sources1, sources2], dim=0)
 
+        print(f'mixtures equal: {self.test_how_many_audios_augemented(mixture)}')
+        # print(f'sources equal: {self.test_how_many_audios_augemented(sources)}')
+        # breakpoint()
         estimated_sources = self(mixture)
         target_model_loss = self.loss_function(estimated_sources, sources)
         optimizer_1.zero_grad()
@@ -76,7 +89,7 @@ class AdvAutoAugment(LightningModule):
                             'loss': target_model_loss,
         })
         self.log('target_loss', target_model_loss, prog_bar=True)
-        time.sleep(3)
+        time.sleep(2)
         return target_model_output
 
     def get_probability_model_loss(self, probabilities, target_model_loss):

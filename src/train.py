@@ -30,10 +30,11 @@ import pytorch_lightning as pl
 from system import AdvAutoAugment
 from asteroid.losses import PITLossWrapper, pairwise_neg_sisdr
 from augment_with_policies import augmentation_list
+from test import ProbModel
 
 # parser = argparse.ArgumentParser()
 # parser.add_argument("--exp_dir", default="exp/tmp", help="Full path to save best validation model")
-# pl.seed_everything(42)
+pl.seed_everything(42)
 
 def main(config):
     exp_dir = config["training"]["exp_dir"]
@@ -72,10 +73,11 @@ def main(config):
     gpus = -1 if torch.cuda.is_available() else None
 
     target_model = DPRNNTasNet(**config["filterbank"], **config["masknet"])
-    probability_model = AugmentationProbabilityOptimizer(num_augmentations=len(augmentation_list), embedding_dim=20)
+    # probability_model = AugmentationProbabilityOptimizer(num_augmentations=len(augmentation_list), embedding_dim=20)
+    probability_model = ProbModel(4)
 
     target_model_optimizer =  make_optimizer(target_model.parameters(), **config["optim"])
-    probability_model_optimizer = Adam(probability_model.parameters(), lr = 0.001)
+    probability_model_optimizer = Adam(probability_model.parameters(), lr = 1e-3)
 
      # Define callbacks
     callbacks = []
