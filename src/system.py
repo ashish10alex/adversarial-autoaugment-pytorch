@@ -39,7 +39,7 @@ class AdvAutoAugment(LightningModule):
     def get_augmented_data_with_policies(self, mixture, sources, probabilities):
         augmentation_policies = ComposeAugmentationPolices(probabilities, augmentation_list=augmentation_list)
         augmentation_function = AugmentWithPolicies(augmentation_policies())
-        mixture = augmentation_function(mixture.detach().cpu().numpy()[0])
+        mixture = augmentation_function(mixture.detach().cpu().numpy())
         mixture = torch.Tensor(mixture).cuda()
         # mixture = torch.Tensor(mixture)
         sources = einops.repeat(sources, 'b h w -> (repeat b) h w', repeat=mixture.shape[0])
@@ -54,7 +54,11 @@ class AdvAutoAugment(LightningModule):
         # print(f'probabilities: {probabilities}')
         # print(f'grads prob_model: {list(self.probability_model.parameters())[0].grad is not None}') #should be true if working
         # print(f'grads target_model: {list(self.target_model.parameters())[0].grad is not None}') #should be true if working
-        mixture, sources = self.get_augmented_data_with_policies(mixture, sources, probabilities)
+        mixture1, sources1 = self.get_augmented_data_with_policies(mixture[0], sources[0][None], probabilities)
+        mixture2, sources2 = self.get_augmented_data_with_policies(mixture[1], sources[1][None], probabilities)
+        mixture = torch.cat([mixture1, mixture2], dim=0)
+        sources = torch.cat([sources1, sources2], dim=0)
+
         estimated_sources = self(mixture)
         target_model_loss = self.loss_function(estimated_sources, sources)
         optimizer_1.zero_grad()
@@ -65,14 +69,14 @@ class AdvAutoAugment(LightningModule):
 
         optimizer_2.zero_grad()
         loss_prob_fake = self.get_probability_model_loss(probabilities, target_model_loss.detach())
-        loss_prob_fake.backward(inputs=list(self.probability_model.parameters()))
+        target_model_loss.backward(inputs=list(self.probability_model.parameters()))
         # self.manual_backward(target_model_loss, optimizer_2, inputs=list(self.probability_model.parameters()))
         optimizer_2.step()
         target_model_output = OrderedDict({
                             'loss': target_model_loss,
         })
         self.log('target_loss', target_model_loss, prog_bar=True)
-        # time.sleep(2)
+        time.sleep(3)
         return target_model_output
 
     def get_probability_model_loss(self, probabilities, target_model_loss):
