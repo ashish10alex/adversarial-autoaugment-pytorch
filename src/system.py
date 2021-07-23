@@ -69,7 +69,8 @@ class AdvAutoAugment(LightningModule):
         mixture = torch.cat([mixture1, mixture2], dim=0)
         sources = torch.cat([sources1, sources2], dim=0)
 
-        print(f'mixtures equal: {self.test_how_many_audios_augemented(mixture)}')
+        #Tests to check if audio is augmented all the time
+        # print(f'mixtures equal: {self.test_how_many_audios_augemented(mixture)}')
         # print(f'sources equal: {self.test_how_many_audios_augemented(sources)}')
         # breakpoint()
         estimated_sources = self(mixture)
@@ -89,13 +90,13 @@ class AdvAutoAugment(LightningModule):
                             'loss': target_model_loss,
         })
         self.log('target_loss', target_model_loss, prog_bar=True)
-        time.sleep(2)
+        # time.sleep(2)
         return target_model_output
 
     def get_probability_model_loss(self, probabilities, target_model_loss):
-        prob_sum = probabilities.sum()
-        return prob_sum * target_model_loss
-
+        prob_loss = [p*target_model_loss for p in probabilities]
+        prob_loss = sum(prob_loss)/len(prob_loss)
+        return prob_loss
 
     def validation_step(self, batch, batch_nb):
         mixture, sources = batch
