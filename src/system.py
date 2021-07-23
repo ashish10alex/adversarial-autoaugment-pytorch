@@ -64,16 +64,16 @@ class AdvAutoAugment(LightningModule):
         # print(f'probabilities: {probabilities}')
         # print(f'grads prob_model: {list(self.probability_model.parameters())[0].grad is not None}') #should be true if working
         # print(f'grads target_model: {list(self.target_model.parameters())[0].grad is not None}') #should be true if working
-        mixture1, sources1 = self.get_augmented_data_with_policies(mixture[0], sources[0][None], probabilities_copy)
-        mixture2, sources2 = self.get_augmented_data_with_policies(mixture[1], sources[1][None], probabilities_copy)
-        mixture = torch.cat([mixture1, mixture2], dim=0)
-        sources = torch.cat([sources1, sources2], dim=0)
+        # mixture1, sources1 = self.get_augmented_data_with_policies(mixture[0], sources[0][None], probabilities_copy)
+        # mixture2, sources2 = self.get_augmented_data_with_policies(mixture[1], sources[1][None], probabilities_copy)
+        mixture, sources = self.get_augmented_data_with_policies(mixture[0], sources[0][None], probabilities_copy)
+        # mixture = torch.cat([mixture1, mixture2], dim=0)
+        # sources = torch.cat([sources1, sources2], dim=0)
 
         #Tests to check if audio is augmented all the time
         # print(f'mixtures equal: {self.test_how_many_audios_augemented(mixture)}')
         # print(f'sources equal: {self.test_how_many_audios_augemented(sources)}')
-        # breakpoint()
-        estimated_sources = self(mixture)
+        estimated_sources = self.target_model(mixture)
         target_model_loss = self.loss_function(estimated_sources, sources)
         optimizer_1.zero_grad()
         # self.manual_backward(target_model_loss, optimizer_1, retain_graph=True)
@@ -83,17 +83,26 @@ class AdvAutoAugment(LightningModule):
 
         optimizer_2.zero_grad()
         loss_prob_fake = self.get_probability_model_loss(probabilities, target_model_loss.detach())
-        target_model_loss.backward(inputs=list(self.probability_model.parameters()))
+        loss_prob_fake.backward(inputs=list(self.probability_model.parameters()))
         # self.manual_backward(target_model_loss, optimizer_2, inputs=list(self.probability_model.parameters()))
         optimizer_2.step()
         target_model_output = OrderedDict({
-                            'loss': target_model_loss,
+                            'target_model_loss': target_model_loss,
         })
         self.log('target_loss', target_model_loss, prog_bar=True)
-        # time.sleep(2)
+        self.log('prob1', probabilities_copy[0], prog_bar=True)
+        self.log('prob2', probabilities_copy[1], prog_bar=True)
+        self.log('prob3', probabilities_copy[2], prog_bar=True)
+        self.log('prob4', probabilities_copy[3], prog_bar=True)
+
+        # self.trainer.logger.log_metrics(target_model_output)
+        # self.log('prob1', probabilities_copy[0])
         return target_model_output
 
     def get_probability_model_loss(self, probabilities, target_model_loss):
+        '''
+        Loss function seems to have the same effect on all the probabilities
+        '''
         prob_loss = [p*target_model_loss for p in probabilities]
         prob_loss = sum(prob_loss)/len(prob_loss)
         return prob_loss

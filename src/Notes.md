@@ -5,17 +5,25 @@ is trained by a larger batch conjured from multiple augmented instances of the s
 learning. The losses of different augmented policies are applied to on the same data are used to train the augmentation
 policy network by Reinforcement learning.
 
-TODO - 
+Resources
  * GAN in PL -  https://github.com/PyTorchLightning/lightning-bolts/blob/master/pl_bolts/models/gans/basic/basic_gan_module.py
- * Check if weights of `probability_model_optimizer` are changing during training - Nope :/ -> Fix this !!
- * Fix no gradient clipping with `manual_backward` issue - https://github.com/PyTorchLightning/pytorch-lightning/issues/7698
+
+TODO - 
+ * [Done] Check if weights of `probability_model_optimizer` are changing during training - Nope :/ -> Fix this !!
+ * [Done]TEST - To check if sources for mixtures are correct
+ * [Done - hack]Fix no gradient clipping with `manual_backward` issue - https://github.com/PyTorchLightning/pytorch-lightning/issues/7698
+ * Read pytorch autograd - https://towardsdatascience.com/pytorch-autograd-understanding-the-heart-of-pytorchs-magic-2686cd94ec95
+ * Plot and see how probability values change for each augmentation (try with overfitting to see quicker results? )
+ * [Done]Change loss function to account for each probability separately
+ * Loss function seems to have the same effect on all the probabilities - might need a different model for each
+     augmentation probability
 
 <b> Possible issues with implementation </b>
 1. Controller class `forward` method is called only once every epoch
 
 
 <b> Possible issues with **new** pytorch-lightning implementation </b>
-1.To accommodate for variable modified in computation graph error, following hack has been applied - `self.target_model_loss_copy = self.target_model_loss.clone().detach() # is this hack correct`
+1. Is the loss for probability model being correctly calculated ?
 
 <b> Tests to do </b>
 * Check DPRNN val loss after one epoch and compare with vanilla implementation

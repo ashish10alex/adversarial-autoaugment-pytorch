@@ -8,6 +8,7 @@ from audiomentations import (AddGaussianNoise, AddImpulseResponse,
                              PitchShift, TimeMask, TimeStretch)
 
 augmentation_list = [AddGaussianNoise, AddShortNoises, FrequencyMask, TimeMask ]
+# augmentation_list = [AddGaussianNoise]
 
 class ComposeAugmentationPolices:
     def __init__(self, probabilities, augmentation_list=augmentation_list):

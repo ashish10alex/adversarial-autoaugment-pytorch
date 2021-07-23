@@ -25,7 +25,7 @@ from dataset import LibriMix
 # from asteroid.engine.system import System
 
 # from models.controller import Controller
-from augmentation_probability_optimizer import AugmentationProbabilityOptimizer
+from augmentation_probability_model import AugmentationProbabilityModel
 import pytorch_lightning as pl
 from system import AdvAutoAugment
 from asteroid.losses import PITLossWrapper, pairwise_neg_sisdr
@@ -69,12 +69,17 @@ def main(config):
         num_workers=config["training"]["num_workers"],
         drop_last=True,
     )
+    # sample = next(iter(train_loader))
+    # from torch.utils.data import TensorDataset
+    # dataset = TensorDataset(sample[0], sample[1])
+    # train_loader = DataLoader(dataset, batch_size= 1)
     # Don't ask GPU if they are not available.
     gpus = -1 if torch.cuda.is_available() else None
 
     target_model = DPRNNTasNet(**config["filterbank"], **config["masknet"])
-    # probability_model = AugmentationProbabilityOptimizer(num_augmentations=len(augmentation_list), embedding_dim=20)
-    probability_model = ProbModel(4)
+    probability_model = AugmentationProbabilityModel(num_augmentations=len(augmentation_list), embedding_dim=20)
+    # num_augmentations = len(augmentation_list)
+    # probability_model = ProbModel(num_augmentations)
 
     target_model_optimizer =  make_optimizer(target_model.parameters(), **config["optim"])
     probability_model_optimizer = Adam(probability_model.parameters(), lr = 1e-3)
@@ -85,7 +90,7 @@ def main(config):
     checkpoint = ModelCheckpoint( monitor="val_loss", filename='{epoch:02d}-{val_loss:.2f}', mode="min", save_top_k=5)
     callbacks.append(checkpoint)
     if config["training"]["early_stop"]:
-	    callbacks.append(EarlyStopping(monitor="val_loss", mode="min", patience=30, verbose=True))
+	    callbacks.append(EarlyStopping(monitor="val_loss", mode="min", patience=600, verbose=True))
     loss_function = PITLossWrapper(pairwise_neg_sisdr, pit_from="pw_mtx")
 
     loss_func = PITLossWrapper(pairwise_neg_sisdr, pit_from="pw_mtx")
