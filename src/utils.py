@@ -10,6 +10,26 @@ import yaml
 import re
 from collections import defaultdict
 
+def flatten_dict(d, parent_key="", sep="_"):
+    """Flattens a dictionary into a single-level dictionary while preserving
+    parent keys. Taken from
+    `SO <https://stackoverflow.com/questions/6027558/flatten-nested-dictionaries-compressing-keys>`_
+    Args:
+        d (MutableMapping): Dictionary to be flattened.
+        parent_key (str): String to use as a prefix to all subsequent keys.
+        sep (str): String to use as a separator between two key levels.
+    Returns:
+        dict: Single-level dictionary, flattened.
+    """
+    items = []
+    for k, v in d.items():
+        new_key = parent_key + sep + k if parent_key else k
+        if isinstance(v, MutableMapping):
+            items.extend(flatten_dict(v, new_key, sep=sep).items())
+        else:
+            items.append((new_key, v))
+    return dict(items)
+
 def seed_everything(seed=1234):
     random.seed(seed)
     os.environ['PYTHONHASHSEED'] = str(seed)

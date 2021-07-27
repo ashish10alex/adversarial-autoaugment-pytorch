@@ -27,7 +27,9 @@ from dataset import LibriMix
 # from models.controller import Controller
 from augmentation_probability_model import AugmentationProbabilityModel
 import pytorch_lightning as pl
-from system import AdvAutoAugment
+from torch.optim.lr_scheduler import ReduceLROnPlateau
+# from system import AdvAutoAugment
+from system_auto_aug import SystemAutoAug
 from asteroid.losses import PITLossWrapper, pairwise_neg_sisdr
 from augment_with_policies import augmentation_list
 from test import ProbModel
@@ -84,6 +86,10 @@ def main(config):
     target_model_optimizer =  make_optimizer(target_model.parameters(), **config["optim"])
     probability_model_optimizer = Adam(probability_model.parameters(), lr = 1e-3)
 
+    scheduler = None
+    if config["training"]["half_lr"]:
+            scheduler = ReduceLROnPlateau(optimizer=target_model_optimizer, factor=0.5, patience=3)
+
      # Define callbacks
     callbacks = []
     checkpoint_dir = os.path.join(exp_dir, "checkpoints/")
@@ -94,13 +100,14 @@ def main(config):
     loss_function = PITLossWrapper(pairwise_neg_sisdr, pit_from="pw_mtx")
 
     loss_func = PITLossWrapper(pairwise_neg_sisdr, pit_from="pw_mtx")
-    system = AdvAutoAugment(target_model=target_model, 
+    system = SystemAutoAug(target_model=target_model, 
                            probability_model=probability_model,
                            train_loader=train_loader,
                            val_loader=val_loader,
                            loss_function=loss_function,
                            target_model_optimizer=target_model_optimizer,
                            probability_model_optimizer=probability_model_optimizer,
+                           scheduler=scheduler,
                            config=config,
                            )
 
@@ -108,8 +115,8 @@ def main(config):
         max_epochs=config["training"]["epochs"],
         gpus=gpus,
         distributed_backend="ddp",
-        # gradient_clip_val=config["training"]["gradient_clipping"],
         callbacks=callbacks,
+        gradient_clip_val=5.0,
     )
     trainer.fit(system)
 
